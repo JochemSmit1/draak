@@ -67,7 +67,7 @@ function init(){
  dragon.position.set(0,10,25);scene.add(dragon);
 
  let joyEl=document.getElementById('joy'),stick=document.getElementById('stick');
- joyEl.addEventListener('touchmove',e=>{let r=joyEl.getBoundingClientRect();let t=e.touches[0];let x=t.clientX-r.left-55,y=t.clientY-r.top-55;let d=Math.hypot(x,y);if(d>40){x=x/d*40;y=y/d*40;}stick.style.transform=⁠ translate(${x}px,${y}px) ⁠;joy.x=x/40;joy.y=y/40;e.preventDefault()},{passive:false});
+ joyEl.addEventListener('touchmove',e=>{let r=joyEl.getBoundingClientRect();let t=e.touches[0];let x=t.clientX-r.left-55,y=t.clientY-r.top-55;let d=Math.hypot(x,y);if(d>40){x=x/d*40;y=y/d*40;}stick.style.transform=`translate(${x}px,${y}px)`;joy.x=x/40;joy.y=y/40;e.preventDefault()},{passive:false});
  joyEl.addEventListener('touchend',()=>{stick.style.transform='translate(0,0)';joy.x=0;joy.y=0;});
  let fb=document.getElementById('fire');fb.addEventListener('touchstart',e=>{isFiring=true;e.preventDefault()});fb.addEventListener('touchend',()=>isFiring=false);
  animate();
