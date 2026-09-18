@@ -1,1 +1,417 @@
 
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMAUGS WRATH - Team Draakuh</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #0a1220;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      color: white;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: linear-gradient(#1a2a44, #0a1220);
+    }
+
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 20px;
+      text-shadow: 0 0 5px black;
+    }
+
+    #hint {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="ui">
+    Gebouwen verbrand:
+    <span id="score">0</span>/10
+  </div>
+
+  <div id="hint">
+    Beweeg om te vliegen | SPATIE / TAP = VUUR
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreElement = document.getElementById("score");
+
+    let width;
+    let height;
+    let score = 0;
+
+    const dragon = {
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0
+    };
+
+    const mouse = {
+      x: 0,
+      y: 0,
+      down: false
+    };
+
+    const houses = [];
+    const fires = [];
+    const particles = [];
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+
+      if (dragon.x === 0 && dragon.y === 0) {
+        dragon.x = width / 2;
+        dragon.y = height / 2;
+      }
+
+      mouse.x = width / 2;
+      mouse.y = height / 2;
+    }
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Maak 10 huizen
+    for (let i = 0; i < 10; i++) {
+      houses.push({
+        x: Math.random() * width * 0.8 + width * 0.1,
+        y: height * 0.6 + Math.random() * height * 0.3,
+        width: 40 + Math.random() * 30,
+        height: 40,
+        burning: false,
+        burn: 0
+      });
+    }
+
+    // Muisbesturing
+    window.addEventListener("mousemove", function (event) {
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+    });
+
+    // Touchbesturing
+    window.addEventListener(
+      "touchmove",
+      function (event) {
+        if (event.touches.length > 0) {
+          mouse.x = event.touches[0].clientX;
+          mouse.y = event.touches[0].clientY;
+        }
+
+        event.preventDefault();
+      },
+      { passive: false }
+    );
+
+    window.addEventListener("mousedown", function () {
+      mouse.down = true;
+    });
+
+    window.addEventListener("mouseup", function () {
+      mouse.down = false;
+    });
+
+    window.addEventListener("touchstart", function () {
+      mouse.down = true;
+    });
+
+    window.addEventListener("touchend", function () {
+      mouse.down = false;
+    });
+
+    // Spatie om vuur te maken
+    window.addEventListener("keydown", function (event) {
+      if (event.code === "Space") {
+        mouse.down = true;
+        event.preventDefault();
+      }
+    });
+
+    window.addEventListener("keyup", function (event) {
+      if (event.code === "Space") {
+        mouse.down = false;
+      }
+    });
+
+    function createFire() {
+      fires.push({
+        x: dragon.x + 20,
+        y: dragon.y,
+        vx: 5 + Math.random() * 8,
+        vy: (Math.random() - 0.5) * 2,
+        life: 40
+      });
+
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x: dragon.x,
+          y: dragon.y,
+          vx: Math.random() * 2 - 1,
+          vy: Math.random() * 2 - 1,
+          color: "#ffaa00",
+          life: 20
+        });
+      }
+    }
+
+    function updateDragon() {
+      dragon.vx += (mouse.x - dragon.x) * 0.01;
+      dragon.vy += (mouse.y - dragon.y) * 0.01;
+
+      dragon.vx *= 0.95;
+      dragon.vy *= 0.95;
+
+      dragon.x += dragon.vx;
+      dragon.y += dragon.vy;
+    }
+
+    function drawRiver() {
+      ctx.fillStyle = "#1c3a5a";
+      ctx.fillRect(0, height * 0.7, width, height * 0.3);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.fillRect(0, height * 0.7, width, 5);
+    }
+
+    function drawHouses() {
+      houses.forEach(function (house) {
+        if (!house.burning) {
+          // Huis
+          ctx.fillStyle = "#4a3721";
+          ctx.fillRect(
+            house.x,
+            house.y,
+            house.width,
+            house.height
+          );
+
+          // Dak
+          ctx.fillStyle = "#2a1e12";
+          ctx.beginPath();
+          ctx.moveTo(house.x, house.y);
+          ctx.lineTo(
+            house.x + house.width / 2,
+            house.y - 20
+          );
+          ctx.lineTo(
+            house.x + house.width,
+            house.y
+          );
+          ctx.fill();
+
+          // Raam
+          ctx.fillStyle = "#ffcc77";
+          ctx.fillRect(
+            house.x + 10,
+            house.y + 10,
+            8,
+            8
+          );
+        } else {
+          house.burn += 0.02;
+
+          const red = Math.min(255, 200 + house.burn * 55);
+          const green = Math.min(255, 50 + house.burn * 20);
+
+          ctx.fillStyle = `rgb(${red}, ${green}, 0)`;
+
+          ctx.fillRect(
+            house.x,
+            house.y,
+            house.width,
+            house.height * (1 - house.burn)
+          );
+
+          if (Math.random() < 0.3) {
+            particles.push({
+              x: house.x + house.width / 2,
+              y: house.y,
+              vx: Math.random() * 4 - 2,
+              vy: -Math.random() * 3,
+              color: "#ff4400",
+              life: 30
+            });
+          }
+        }
+      });
+    }
+
+    function updateFires() {
+      for (let i = fires.length - 1; i >= 0; i--) {
+        const fire = fires[i];
+
+        fire.x += fire.vx;
+        fire.y += fire.vy;
+        fire.life--;
+
+        // Vuur tekenen
+        ctx.fillStyle = "#ff6600";
+        ctx.beginPath();
+        ctx.arc(
+          fire.x,
+          fire.y,
+          6,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+
+        // Botsing met huizen controleren
+        houses.forEach(function (house) {
+          const hit =
+            !house.burning &&
+            fire.x > house.x &&
+            fire.x < house.x + house.width &&
+            fire.y > house.y - 20 &&
+            fire.y < house.y + house.height;
+
+          if (hit) {
+            house.burning = true;
+            score++;
+
+            scoreElement.textContent = score;
+
+            if (score >= 10) {
+              setTimeout(function () {
+                alert("HET DORP IS VERWOEST! Jij wint, Gouden Smaug!");
+              }, 100);
+            }
+          }
+        });
+
+        if (fire.life <= 0) {
+          fires.splice(i, 1);
+        }
+      }
+    }
+
+    function drawDragon() {
+      ctx.save();
+
+      ctx.translate(dragon.x, dragon.y);
+
+      // Lichaam
+      ctx.fillStyle = "#d4af37";
+      ctx.beginPath();
+      ctx.ellipse(
+        0,
+        0,
+        35,
+        15,
+        0,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      // Linkervleugel
+      ctx.fillStyle = "#b8962e";
+      ctx.beginPath();
+      ctx.ellipse(
+        -25,
+        0,
+        25,
+        12,
+        0,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      // Rechtervleugel
+      ctx.beginPath();
+      ctx.ellipse(
+        15,
+        -10,
+        20,
+        10,
+        0.5,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      // Oog
+      ctx.fillStyle = "#ffaa00";
+      ctx.beginPath();
+      ctx.arc(
+        18,
+        -2,
+        4,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
+
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life--;
+
+        ctx.fillStyle = particle.color;
+        ctx.fillRect(
+          particle.x,
+          particle.y,
+          3,
+          3
+        );
+
+        if (particle.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function gameLoop() {
+      updateDragon();
+
+      if (mouse.down && Math.random() < 0.5) {
+        createFire();
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      drawRiver();
+      drawHouses();
+      updateFires();
+      drawDragon();
+      updateParticles();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+
+</body>
+</html>
