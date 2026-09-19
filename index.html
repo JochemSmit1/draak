@@ -1,0 +1,336 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>SMAUG PIXEL CHASE</title>
+
+<style>
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  font-family: monospace;
+  image-rendering: pixelated;
+}
+
+#ui {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0,0,60,.85);
+  border: 2px solid #aaf;
+  padding: 6px 10px;
+  color: #ffdd77;
+  font-weight: bold;
+  font-size: 12px;
+  z-index: 5;
+  line-height: 1.3;
+  border-radius: 6px;
+}
+
+/* MENU */
+#menu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0a1430;
+  z-index: 10;
+  color: #fff;
+  gap: 12px;
+  text-align: center;
+}
+
+#menu h1 {
+  color: #ffcc33;
+  margin: 0;
+  font-size: 28px;
+}
+
+#startButton {
+  padding: 16px 30px;
+  font-size: 18px;
+  background: #ffcc33;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* BESTURING */
+#controls {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Richtingsknoppen */
+.controlButton {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  border: 3px solid rgba(255,255,255,.45);
+  background: rgba(20,40,90,.72);
+  color: white;
+  font-size: 34px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,.4);
+}
+
+.controlButton:active {
+  background: rgba(80,120,220,.9);
+  transform: scale(.94);
+}
+
+/* Linker besturing */
+#left {
+  left: 18px;
+  bottom: 90px;
+}
+
+#right {
+  left: 174px;
+  bottom: 90px;
+}
+
+/* Hoogte */
+#up {
+  left: 96px;
+  bottom: 168px;
+}
+
+#down {
+  left: 96px;
+  bottom: 12px;
+}
+
+/* FIRE */
+#fire {
+  position: absolute;
+  right: 20px;
+  bottom: 30px;
+  width: 115px;
+  height: 115px;
+  border-radius: 50%;
+  border: 4px solid #ffaa00;
+  background: radial-gradient(circle, #ff9900 0%, #ff4400 55%, #991100 100%);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  z-index: 6;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 5px 20px rgba(255,70,0,.45);
+}
+
+#fire:active {
+  transform: scale(.93);
+  background: radial-gradient(circle, #ffff00 0%, #ff6600 50%, #cc2200 100%);
+}
+
+/* Kleine schermen */
+@media (max-width: 500px) {
+  .controlButton {
+    width: 64px;
+    height: 64px;
+    font-size: 30px;
+  }
+
+  #left {
+    left: 12px;
+    bottom: 82px;
+  }
+
+  #right {
+    left: 150px;
+    bottom: 82px;
+  }
+
+  #up {
+    left: 81px;
+    bottom: 152px;
+  }
+
+  #down {
+    left: 81px;
+    bottom: 8px;
+  }
+
+  #fire {
+    width: 105px;
+    height: 105px;
+    right: 15px;
+    bottom: 22px;
+  }
+}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+
+<body>
+
+<!-- MENU -->
+<div id="menu">
+  <h1>🐉 PIXEL CHASE</h1>
+
+  <p style="margin:0;color:#aaf">
+    VLIEG ALS SMAUG DOOR HET DORP
+  </p>
+
+  <p style="font-size:11px;opacity:.6">
+    Eenvoudige mobiele besturing
+  </p>
+
+  <button id="startButton" onclick="start()">
+    🐉 START
+  </button>
+</div>
+
+<!-- SCORE -->
+<div id="ui" style="display:none">
+  BUILDINGS BURNED: <span id="s">0</span><br>
+  SCORE: <span id="sc">0</span>
+</div>
+
+<!-- BESTURING -->
+<div id="controls">
+
+  <!-- LINKS -->
+  <button
+    id="left"
+    class="controlButton"
+    type="button">
+    ◀
+  </button>
+
+  <!-- RECHTS -->
+  <button
+    id="right"
+    class="controlButton"
+    type="button">
+    ▶
+  </button>
+
+  <!-- OMHOOG -->
+  <button
+    id="up"
+    class="controlButton"
+    type="button">
+    ▲
+  </button>
+
+  <!-- OMLAAG -->
+  <button
+    id="down"
+    class="controlButton"
+    type="button">
+    ▼
+  </button>
+
+  <!-- VUUR -->
+  <button id="fire" type="button">
+    🔥<br>FIRE
+  </button>
+
+</div>
+
+<script type="module">
+
+import * as THREE from 'three';
+
+let scene;
+let camera;
+let renderer;
+
+let dragon;
+let leftWing;
+let rightWing;
+
+let houses = [];
+let fires = [];
+
+let score = 0;
+let scorePts = 0;
+
+/*
+  EENVOUDIGE BESTURING
+
+  left  = -1
+  right = +1
+  up    = +1
+  down  = -1
+*/
+let controls = {
+  left: false,
+  right: false,
+  up: false,
+  down: false
+};
+
+let isFiring = false;
+
+let camTarget = new THREE.Vector3();
+
+
+/* =========================================
+   START
+========================================= */
+
+window.start = () => {
+
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('ui').style.display = 'block';
+  document.getElementById('controls').style.display = 'block';
+
+  init();
+};
+
+
+/* =========================================
+   HUIS
+========================================= */
+
+function pixelCabin(x, z) {
+
+  let g = new THREE.Group();
+
+  // Huis
+  let base = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 1.8, 2.8),
+    new THREE.MeshStandardMaterial({
+      color: 0x6b4a2f
+    })
+  );
+
+  base.position.y = 0.9;
+  g.add(base);
+
+
+  // Dak
+  let roof = new THREE.Mesh(
+    new THREE.BoxGeometry(3.6, 0.6, 3.2),
+    new THREE.MeshStandardMaterial({
+      col
+```
